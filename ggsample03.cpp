@@ -1,4 +1,4 @@
-﻿//
+//
 // ゲームグラフィックス特論宿題アプリケーション
 //
 #include "GgApp.h"
@@ -94,7 +94,38 @@ static void frustum(GLfloat* m, float left, float right, float bottom, float top
 static void perspective(GLfloat* m, float fovy, float aspect, float zNear, float zFar)
 {
   // 【宿題】ここを解答してください（loadIdentity() を置き換えてください）
+  //透視投影変換行列を求めて引数の配列変数 m に格納する関数
   loadIdentity(m);
+  //ここがおかしいかも1
+  GLfloat PL[4];
+  PL[0] = 1;
+  PL[1] = 1;
+  PL[2] = 1;
+  PL[3] = 1;
+  
+  loadIdentity(PL);
+
+  const GLfloat f =1 / tan(fovy / 2);
+  std::cout << "fovy is" << fovy << "--" << "f is" << f << std::endl;
+  /*
+  GLfloat T[] = {
+    f/aspect,0,0,0,
+    0,zFar,0,0,
+    0,0,(zFar+zNear)/(zFar-zNear),-2*zFar*zNear/(zFar-zNear),
+    0,0,-1,0
+  };
+  multiply(m, T,PL);
+  */
+  m[0] = f / aspect;
+  m[1] = m[2] = m[3] = 0.0f;
+  m[4] = m[6] = m[7] = 0.0f;
+  m[5] = f;
+  m[8] = m[9] = 0.0f;
+  m[10] = -(zFar + zNear) / (zFar - zNear);
+  m[11] = -1.0f;
+  m[12] = m[13] = m[15] = 0.0f;
+  m[14] = -2 * zFar * zNear / (zFar - zNear);
+
 }
 
 //
@@ -109,6 +140,43 @@ static void lookat(GLfloat* m, float ex, float ey, float ez, float tx, float ty,
 {
   // 【宿題】ここを解答してください（loadIdentity() を置き換えてください）
   loadIdentity(m);
+
+  GLfloat GF[16];
+  loadIdentity(GF);
+  GF[12] = -ex;
+  GF[13] = -ey;
+  GF[14] = -ez;
+
+
+  const GLfloat t[] = {
+    ex - tx,
+    ey - ty,
+    ez - tz,
+  };
+    const GLfloat u[] = {
+      uy * t[2] - uz *t[1],
+      uz * t[0] - ux *t[2],
+      ux * t[1] - uy *t[0]
+  };
+
+
+    const GLfloat s[] = {
+      t[1] * u[2] - t[2] * u[1],
+      t[2] * u[0] - t[0] * u[2],
+      t[0] * u[1] - t[1] * u[0]
+    };
+
+    const GLfloat rlength = ggLength3(u);
+    const GLfloat tlength = ggLength3(t);
+    const GLfloat slength = ggLength3(s);
+
+    GLfloat S[] = {
+      u[0] / rlength, s[0] / slength, t[2] / tlength,0,
+      u[1] / rlength, s[1] / slength, t[2] / tlength,0,
+      u[2] / rlength, s[2] / slength, t[2] / tlength,0,
+      0,0,0,1
+    };
+    multiply(m, S, GF);
 }
 
 //
@@ -190,6 +258,7 @@ int GgApp::main(int argc, const char* const* argv)
 
     // uniform 変数 mc に変換行列 mc を設定する
     // 【宿題】ここを解答してください（uniform 変数 mc のインデックスは変数 mcLoc に入っています）
+    glUniformMatrix4fv(mcLoc, 1, GL_FALSE, mc);
 
     // 描画に使う頂点配列オブジェクトの指定
     glBindVertexArray(vao);
